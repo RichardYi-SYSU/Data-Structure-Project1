@@ -1,5 +1,5 @@
 #include "expressionCalc.h"
-
+using namespace std;
 //字符栈与数据栈的初始化
 void InitCharStack(charStack *s)
 {
@@ -34,7 +34,7 @@ bool PushCharStack(charStack *s,char x)
     return true;
 }
 
-bool PushNumStack(numStack *s,int x)
+bool PushNumStack(numStack *s,double x)
 {
     if(s->top==MAX_SIZE-1)return false;
     (s->top)++;
@@ -50,7 +50,7 @@ bool PopCharStack(charStack *s,char &x)
     return true;
 }
 
-bool PopNumStack(numStack *s,int &x)
+bool PopNumStack(numStack *s,double &x)
 {
     if(s->top==-1)return false;
     x=s->data[s->top];
@@ -64,14 +64,14 @@ char GetCharStackTop(charStack *s)
     return s->data[s->top];
 }
 
-int GetNumStackTop(numStack *s)
+double GetNumStackTop(numStack *s)
 {
     if(s->top==-1)return '\0';
     return s->data[s->top];
 }
 
 
-double Operate(int b,char op,int a)
+double Operate(double b,char op,double a)
 {
     switch(op)
     {
@@ -82,109 +82,296 @@ double Operate(int b,char op,int a)
         case '*':
             return b*a;
         case '/':
-            if(a==0)
-            {
-                return '?';
-            }else{
-                return b/a;
-            }
+            // if(a==0.0)
+            // {
+            //     return '?';
+            // }else{
+            //     return b/a;
+            // }
+            return b/a;
     }
 }
 
 
 
+
+
+// int getNumLen(int num)
+// {
+//     int len=0;
+//     while(num>0)
+//     {
+//         num/=10;
+//         len++;
+//     }
+//     return len;
+// }
+
+
 //输入相关函数的实现
-void Input(numStack *ns,charStack *cs)
+char* Input()
 {
-    int sum=0;
-    int temp1=0;
-    int temp2=0;
-    char temp;
-    int ans=0;
-    int digit=0;
-    int j=0;
+    char *str=new char[MAX_SIZE];//注意程序结束时delete
+    cin.getline(str,MAX_SIZE);//确认能否使用getline
+    return str;
+}
+
+
+//仅用于程序调试中使用，用于输出当前字符串
+void Print(char* s)
+{
     int i=0;
-    int len=0;
-    char str[MAX_SIZE];
-    //cin.getline(str,1000);
-    while(i!='\0')
+    while(s[i]!='\0')
     {
-        
-        if(str[i]>='0'&&str[i]<='9')
-        {
-            j=i;
-            len=0;
-            sum=0;
-            while(str[j]>='0'&&str[j]<='9')
-            {
-                len++;
-                j++;
-            }
-            //转为整数并压栈
-            for(;i<j;i++)
-            {
-                sum+=(str[i]-'0')*pow(10,len-1-i);
-            }
-            PushNumStack(ns,sum);
-        }else
-        {
-            switch(str[i])
+        cout<<s[i++];
+    }
+    cout<<'\n'<<"PrintSuccess"<<endl;
+}
+
+
+//将字符形式的整数转为int型整数
+int charToInt(char *s,int begin,int len)
+{
+    //1314
+    int num=0;
+    for(int i=begin;i<begin+len;i++)
+    {
+        num=num*10+(s[i]-'0');
+    }
+    return num;
+}
+
+
+//运算符优先级比较
+char Precede(char top,char cur)
+{
+    //比较栈顶运算符和当前运算符的关系，其中栈顶运算符在前
+    switch(top)
+    {
+        case '+':
+            switch(cur)
             {
                 case '+':
-                    switch(GetCharStackTop(cs))
-                    {
-                        case '+':
-                            PushCharStack(cs,str[i]);
-                            break;                            
-                        case '-':
-                            PushCharStack(cs,str[i]);
-                            break;
-                        case '*':
-                            PopCharStack(cs,temp);
-                            PopNumStack(ns,temp1);
-                            PopNumStack(ns,temp2);
-                            Operate(temp2,GetCharStackTop(cs),temp1);
-                            PushCharStack(cs,str[i]);
-                            break;
-                        case '/':
-                            PopCharStack(cs,temp);
-                            PopNumStack(ns,temp1);
-                            PopNumStack(ns,temp2);
-                            if(temp1==0)
-                            {
-                                //出错了，考虑如何传出报错
-                                return;
-                            }else{
-                                PushNumStack(ns,temp2/temp1);
-                                PushCharStack(cs,str[i]);
-                            }
-                            break;
-                        case '(':
-                            PushCharStack(cs,str[i]);
-                            break;
-                        case '#':
-                            PushCharStack(cs,str[i]);
-                            break;
-                    }
-                    break;
-                case '(':
-                    PushCharStack(cs,str[i]);
-                    break;
+                case '-':
                 case ')':
-                    {
-                        while(GetCharStackTop(cs)!='(')
-                        {
-                            PopCharStack(cs,temp);
-                            PopNumStack(ns,temp1);
-                            PopNumStack(ns,temp2);
-
-                        }
-
-                    }
-                    
+                case '#':return '>';
+                case '*':
+                case '/':
+                case '(':return '<';
             }
-        }
-        
+            break;
 
+        case '-':
+            switch(cur)
+            {
+                case '+':
+                case '-':
+                case ')':
+                case '#':return '>';
+                case '*':
+                case '/':
+                case '(':return '<';
+            }
+            break;
+
+        case '*':
+            switch(cur)
+            {
+                case '+':
+                case '-':
+                case '*':
+                case '/':
+                case ')':
+                case '#':return '>';
+                case '(':return '<';
+            }
+            break;
+
+        case '/':
+            switch(cur)
+            {
+                case '+':
+                case '-':
+                case '*':
+                case '/':
+                case ')':
+                case '#':return '>';
+                case '(':return '<';
+            }
+            break;
+            
+        case '(':
+            switch(cur)
+            {
+                case ')':return '=';
+                case '#':return '?';
+                default:return '<';
+            }
+            break;
+
+        case ')':
+            switch(cur)
+            {
+                case '(':return '?';
+                default:return '>';
+            }
+            break;
+
+        case '#':
+            switch(cur)
+            {
+                case ')':return '?';
+                default:return '<';
+            }
     }
+    return '?';
+}
+
+
+
+
+double expressionCalc(char *str,charStack *cs,numStack *ns)
+{
+    int i=0;
+    int j=0;
+    char cur;
+    int numLen=0;
+    char topOp;
+    char relation;
+    char tmp;
+    char Op;
+    double num1=0;
+    double num2=0;
+    double ans;
+    
+    while(str[i]!='\0')//后续可用#替换\0?
+    {
+        //cout<<i<<endl;
+        cur=str[i];
+        //是数字就找到数字的末位，转换成int再压栈
+        if(cur>='0'&&cur<='9')
+        {
+            numLen=0;
+            j=i;
+            while(str[j]!='\0'&&str[j]!='#'&&str[j]!='/'&&str[j]!='*'&&str[j]!='+'&&str[j]!='-'&&str[j]!='('&&str[j]!=')')
+            {
+                numLen++;
+                j++;
+            }
+            PushNumStack(ns,charToInt(str,i,numLen));
+            i=j;
+        }else{
+            //是运算符执行以下操作
+            topOp=GetCharStackTop(cs);
+            relation=Precede(topOp,cur);
+
+            if(relation=='<')
+            {
+                PushCharStack(cs,cur);
+                i++;
+            }else if(relation=='=')
+            {
+                PopCharStack(cs,tmp);
+                i++;
+            }else if(relation=='>')
+            {
+                while(relation=='>')
+                {
+                    PopCharStack(cs,Op);
+                    PopNumStack(ns,num2);
+                    PopNumStack(ns,num1);
+                    PushNumStack(ns,Operate(num1,Op,num2));
+                    topOp=GetCharStackTop(cs);
+                    relation=Precede(topOp,cur);
+                }
+                if(relation=='<')
+                {
+                    PushCharStack(cs,cur);
+                    i++;
+                }else if(relation=='=')
+                {
+                    PushCharStack(cs,tmp);
+                    i++;
+                }
+            }else{
+                i++;
+                //cout<<"Wrong Expression"<<endl;
+            }
+
+
+
+        }
+       
+
+
+
+
+
+        
+    }
+
+    cur = '#';
+    relation = Precede(GetCharStackTop(cs), cur);
+    while(true)
+    {
+        if(relation=='>')
+        {
+            PopCharStack(cs,Op);
+            PopNumStack(ns,num2);
+            PopNumStack(ns,num1);
+            PushNumStack(ns, Operate(num1,Op,num2));
+            relation = Precede(GetCharStackTop(cs), cur);
+        }
+        else if(relation=='=')
+        {
+            PopCharStack(cs,tmp);  // 匹配到 # #
+            break;                 // 规约完成
+        }
+        else if(relation=='<')
+        {
+            // 理论上此时不会发生（栈底已有 '#'），留作健壮性兜底
+            PushCharStack(cs,cur);
+            relation = Precede(GetCharStackTop(cs), cur);
+        }
+        else
+        {
+            // 非法关系：按“假定合法”不处理
+            break;
+        }
+    }
+
+    PopNumStack(ns,ans);
+    return ans;
+}
+
+
+
+int main()
+{
+    charStack cStack;
+    numStack nStack;
+    charStack*cs=&cStack;
+    numStack*ns=&nStack;
+
+    InitCharStack(cs);
+    PushCharStack(cs,'#');
+    InitNumStack(ns);
+
+    
+
+
+
+
+    
+
+    char* str=Input();
+    Print(str);
+    
+    double ans=expressionCalc(str,cs,ns);
+    cout<<ans<<endl;
+
+
+
+    return 0;
+
 }

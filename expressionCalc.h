@@ -1,5 +1,6 @@
 #define MAX_SIZE 1000
 #include <math.h>
+#include <iostream>
 
 //栈的实现
 typedef struct {
@@ -22,33 +23,31 @@ bool IsNumStackEmpty(numStack *s);
 //压栈
 bool PushCharStack(charStack *s,char x);
 
-bool PushNumStack(numStack *s,int x);
+bool PushNumStack(numStack *s,double x);
 //弹出
 bool PopCharStack(charStack *s,char &x);
 
-bool PopNumStack(numStack *s,int &x);
+bool PopNumStack(numStack *s,double &x);
 //取栈顶
 char GetCharStackTop(charStack *s);
 
-int GetNumStackTop(numStack *s);
+double GetNumStackTop(numStack *s);
 
 
 
 //输入的函数
 
-void Input();
+char* Input();//返回一个字符数组
+
+//仅用于程序调试中使用，用于输出当前字符串
+void Print(char *s);
+
 
 
 //得到整数的长度
-int getNumLen(int num)
-{
-    int len=0;
-    while(num>0)
-    {
-        num/=10;
-        len++;
-    }
-    return len;
-}
 
 
+//将字符形式的整数转为int型整数
+int charToInt(char *s,int begin,int len);
+
+double expressionCalc(char *str,charStack *cs,numStack *ns);
