@@ -1,5 +1,5 @@
 #define MAX_SIZE 1000
-#include <math.h>
+#include <cmath>
 #include <iostream>
 
 //栈的实现

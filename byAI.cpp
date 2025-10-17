@@ -1,194 +1,323 @@
 #include <iostream>
-#include <iomanip>
+#include <cstring>
+#include <cmath>
 using namespace std;
 
-#define MAX_SIZE 1000
+const int MAX_SIZE = 10000;
 
-struct charStack { int top; char data[MAX_SIZE]; };
-struct numStack  { int top; double data[MAX_SIZE]; };
+// ---------------- 栈定义（保持你的风格） ----------------
+typedef struct {
+    int top;
+    char data[MAX_SIZE];
+} charStack;
 
-// ===== 栈操作 =====
-void InitCharStack(charStack *s){ s->top=-1; memset(s->data,0,sizeof(s->data)); }
-void InitNumStack (numStack  *s){ s->top=-1; memset(s->data,0,sizeof(s->data)); }
+typedef struct {
+    int top;
+    double data[MAX_SIZE];
+} numStack;
 
-bool IsCharStackEmpty(charStack *s){ return s->top==-1; }
-bool IsNumStackEmpty (numStack  *s){ return s->top==-1; }
+void InitCharStack(charStack *s) { s->top = -1; memset(s->data, 0, sizeof(s->data)); }
+void InitNumStack(numStack *s)   { s->top = -1; memset(s->data, 0, sizeof(s->data)); }
 
-bool PushCharStack(charStack *s,char x){ if(s->top==MAX_SIZE-1) return false; s->data[++s->top]=x; return true; }
-bool PushNumStack (numStack  *s,double x){ if(s->top==MAX_SIZE-1) return false; s->data[++s->top]=x; return true; }
+bool IsCharStackEmpty(charStack *s) { return s->top == -1; }
+bool IsNumStackEmpty(numStack *s)   { return s->top == -1; }
 
-bool PopCharStack(charStack *s,char &x){ if(s->top==-1) return false; x=s->data[s->top--]; return true; }
-bool PopNumStack (numStack  *s,double &x){ if(s->top==-1) return false; x=s->data[s->top--]; return true; }
-
-char GetCharStackTop(charStack *s){ return (s->top==-1)? '\0' : s->data[s->top]; }
-double GetNumStackTop(numStack *s){ return (s->top==-1)? NAN : s->data[s->top]; }
-
-// ===== 运算 =====
-double Operate(double b, char op, double a){
-    switch(op){
-        case '+': return b + a;
-        case '-': return b - a;
-        case '*': return b * a;
-        case '/': return (a==0.0)? NAN : b / a;
-        default:  return NAN;
-    }
+bool PushCharStack(charStack *s, char x) {
+    if (s->top == MAX_SIZE - 1) return false;
+    s->data[++(s->top)] = x;
+    return true;
+}
+bool PushNumStack(numStack *s, double x) {
+    if (s->top == MAX_SIZE - 1) return false;
+    s->data[++(s->top)] = x;
+    return true;
 }
 
-// ===== 输入/输出辅助 =====
-char* Input(){
-    char *str = new char[MAX_SIZE];
-    cin.getline(str, MAX_SIZE);
-    return str;
+char GetCharStackTop(charStack *s) {
+    if (IsCharStackEmpty(s)) return '\0';
+    return s->data[s->top];
+}
+double GetNumStackTop(numStack *s) {
+    if (IsNumStackEmpty(s)) return 0.0;
+    return s->data[s->top];
 }
 
-void Print(char* s){
-    for(int i=0; s[i]!='\0'; ++i) cout<<s[i];
-    cout << "\nPrintSuccess\n";
+bool PopCharStack(charStack *s, char &x) {
+    if (IsCharStackEmpty(s)) return false;
+    x = s->data[(s->top)--];
+    return true;
+}
+bool PopNumStack(numStack *s, double &x) {
+    if (IsNumStackEmpty(s)) return false;
+    x = s->data[(s->top)--];
+    return true;
 }
 
-// 将 [begin, begin+len) 的数字串转为整数
-int charToInt(char *s, int begin, int len){
-    int num=0;
-    for(int i=0;i<len;++i) num = num*10 + (s[begin+i]-'0');
-    return num;
+// ---------------- 工具函数 ----------------
+
+// 判断 i 位置的 '-' 是否为单目减
+bool isUnaryMinus(char *str, int i)
+{
+    int p = i - 1;
+    while (p >= 0 && str[p] == ' ') p--; // 跳过空格
+    if (p < 0) return true;              // 表达式开头
+    if (str[p] == '(') return true;      // 左括号后
+    if (str[p] == '+' || str[p] == '-' || str[p] == '*' || str[p] == '/' || str[p] == '^')
+        return true;                     // 另一个运算符后
+    return false;                        // 其它情况为二目减
 }
 
-bool isOp(char c){
-    return c=='+'||c=='-'||c=='*'||c=='/'||c=='('||c==')'||c=='#';
-}
-
-// 按题目给的优先级表：返回关系 '<' 进栈, '>' 规约, '=' 匹配(括号或##), '?' 非法
-char Precede(char top, char cur){
-    // 完整覆盖 7x7 的组合
-    switch(top){
-        case '+':
-        case '-':
-            switch(cur){
-                case '+': case '-': case ')': case '#': return '>';
-                case '*': case '/': case '(':          return '<';
-                default: return '?';
-            }
-        case '*':
-        case '/':
-            switch(cur){
-                case '(':                 return '<';
-                case '+': case '-':
-                case '*': case '/':
-                case ')': case '#':       return '>';
-                default: return '?';
-            }
-        case '(':
-            switch(cur){
-                case ')': return '=';
-                case '#': return '?'; // 不应直接遇到 # 
-                default:  return '<'; // 对除 ')' 外的所有符号都先入栈
-            }
-        case ')':
-            // 栈顶不应为 ')'（规约过程中不会保留它）
-            return '?';
-        case '#':
-            switch(cur){
-                case '#': return '=';
-                case ')': return '?';
-                default:  return '<'; // 对 + - * / ( 皆为 <
-            }
-        default:
-            return '?';
-    }
-}
-
-double expressionCalc(char *str, charStack *cs, numStack *ns){
-    // 确保输入以 # 结束：如果用户没打，就补一个
+// 比较当前运算符 a 与“栈顶运算符” b 的优先级关系
+// 约定：返回 '<' 表示 a 的优先级低（需要先弹出 b）
+//      返回 '>' 表示 a 的优先级高或等价但右结合（不弹出 b，直接压栈 a）
+// 规则（从高到低）： ^  >  ~(单目减)  >  * /  >  + -
+// 结合性： ^ 与 ~ 均按右结合处理（a==b 时返回 '>'）
+char compare(char a, char b)
+{
+    switch (a)
     {
-        size_t L = strlen(str);
-        if(L==0 || str[L-1] != '#'){
-            if(L+1 < MAX_SIZE){ str[L]='#'; str[L+1]='\0'; }
-        }
-    }
-
-    int i=0;
-    while(str[i]!='\0'){
-        char cur = str[i];
-
-        // 忽略空白
-        if(isspace(static_cast<unsigned char>(cur))){ ++i; continue; }
-
-        if(isdigit(static_cast<unsigned char>(cur))){
-            // 读取整数
-            int j=i;
-            while(isdigit(static_cast<unsigned char>(str[j]))) ++j;
-            int val = charToInt(str,i,j-i);
-            PushNumStack(ns, static_cast<double>(val));
-            i = j;
-            continue;
-        }
-
-        if(!isOp(cur)){
-            // 非法字符：直接跳过或可报错
-            ++i;
-            continue;
-        }
-
-        // 运算符处理（含括号和 #）
-        char topOp = GetCharStackTop(cs);
-        char rel   = Precede(topOp, cur);
-
-        if(rel=='<'){
-            PushCharStack(cs, cur);
-            ++i;
-        }else if(rel=='='){
-            char tmp; PopCharStack(cs, tmp); // 弹出 '(' 或与 '#' 匹配
-            ++i;
-        }else if(rel=='>'){
-            // 连续规约直到不能规约
-            while(true){
-                char Op;  double a,b;
-                PopCharStack(cs, Op);
-                PopNumStack(ns, a);
-                PopNumStack(ns, b);
-                PushNumStack(ns, Operate(b, Op, a));
-                topOp = GetCharStackTop(cs);
-                rel   = Precede(topOp, cur);
-                if(rel!='>') break;
+        case '+': {
+            switch (b) {
+                case '+':
+                case '-':
+                case '*':
+                case '/':
+                case '^': return '<';
+                case '~': return '<';
             }
-            // 规约完后根据关系处理当前符号
-            if(rel=='<'){
-                PushCharStack(cs, cur);
-                ++i;
-            }else if(rel=='='){
-                char tmp; PopCharStack(cs, tmp); // 正确做法：弹出 '('，不应该 Push
-                ++i;
-            }else if(rel=='?'){
-                // 非法：跳过
-                ++i;
-            }
-        }else{ // '?'
-            ++i;
-        }
-    }
+        } break;
 
-    // 此时应已处理到字符串末尾（保证以 # 结束），数栈剩一个结果
-    double ans;
-    PopNumStack(ns, ans);
-    return ans;
+        case '-': {
+            switch (b) {
+                case '+':
+                case '-':
+                case '*':
+                case '/':
+                case '^': return '<';
+                case '~': return '<';
+            }
+        } break;
+
+        case '*': {
+            switch (b) {
+                case '+':
+                case '-': return '>';
+                case '*':
+                case '/': return '<';
+                case '^': return '<'; // ^ 更高
+                case '~': return '<'; // ~ 更高
+            }
+        } break;
+
+        case '/': {
+            switch (b) {
+                case '+':
+                case '-': return '>';
+                case '*':
+                case '/': return '<';
+                case '^': return '<';
+                case '~': return '<';
+            }
+        } break;
+
+        case '^': { // 最高，右结合
+            switch (b) {
+                case '^': return '>'; // 右结合：不弹
+                case '~':
+                case '*':
+                case '/':
+                case '+':
+                case '-': return '>'; // 当前 ^ 更高
+            }
+        } break;
+
+        case '~': { // 单目减，次高，右结合
+            switch (b) {
+                case '^': return '<'; // ^ 比 ~ 高，先弹 ^
+                case '~': return '>'; // 右结合：不弹
+                case '*':
+                case '/':
+                case '+':
+                case '-': return '>'; // ~ 比这些都高
+            }
+        } break;
+    }
+    // 保守处理：未知组合按“当前更低”
+    return '<';
 }
 
-// ========== 示例 main ==========
-int main(){
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
+// 将从 str[i] 开始的 numLen 位十进制数转为整数
+int charToInt(char* str, int i, int numLen)
+{
+    int v = 0;
+    for (int k = 0; k < numLen; ++k) {
+        v = v * 10 + (str[i + k] - '0');
+    }
+    return v;
+}
 
-    charStack cStack; numStack nStack;
-    InitCharStack(&cStack); InitNumStack(&nStack);
-    PushCharStack(&cStack, '#');
+// 二目运算
+double Operate(double x, char op, double y)
+{
+    switch (op)
+    {
+        case '+': return x + y;
+        case '-': return x - y;
+        case '*': return x * y;
+        case '/': return x / y;       // 可按需加除零检查
+        case '^': return pow(x, y);   // 乘方
+    }
+    return 0.0;
+}
 
-    char* s = Input();
-    Print(s);
+// ---------------- 中缀转后缀 ----------------
+void midToEnd(char* str, char*& result, charStack* cs)
+{
+    int i = 0, j = 0, k = 0;
+    char tmp;
 
-    double ans = expressionCalc(s, &cStack, &nStack);
-    if(std::isnan(ans)) cout << "Error\n";
-    else cout << fixed << setprecision(0) << ans << "\n";
+    while (str[i] != '\0')
+    {
+        if (str[i] >= '0' && str[i] <= '9')
+        {
+            // 扫一段连续数字
+            j = i;
+            while (str[j] != '\0' && str[j] != '#'
+                && str[j] != '/' && str[j] != '*' && str[j] != '+' && str[j] != '-'
+                && str[j] != '(' && str[j] != ')' && str[j] != '^') // 加入 '^'
+            {
+                result[k++] = str[j];
+                j++;
+            }
+            result[k++] = ' '; // 数字之间用空格分隔
+            i = j;
+        }
+        else
+        {
+            if (str[i] == ' ')
+            {
+                i++; // 忽略空格
+            }
+            else if (str[i] == '(')
+            {
+                PushCharStack(cs, str[i]);
+                i++;
+            }
+            else if (str[i] == ')')
+            {
+                while (!IsCharStackEmpty(cs) && GetCharStackTop(cs) != '(')
+                {
+                    result[k++] = GetCharStackTop(cs);
+                    PopCharStack(cs, tmp);
+                }
+                if (!IsCharStackEmpty(cs) && GetCharStackTop(cs) == '(') {
+                    PopCharStack(cs, tmp); // 弹出 '('
+                }
+                i++;
+            }
+            else
+            {
+                // 处理运算符：支持 + - * / ^ 以及单目减（用 '~'）
+                char curOp = str[i];
 
-    delete [] s;
+                // 单目减识别：把 '-' 替换为内部一元记号 '~'
+                if (curOp == '-' && isUnaryMinus(str, i)) {
+                    curOp = '~';
+                }
+
+                while (!IsCharStackEmpty(cs)
+                       && compare(curOp, GetCharStackTop(cs)) == '<'
+                       && GetCharStackTop(cs) != '(')
+                {
+                    result[k++] = GetCharStackTop(cs);
+                    PopCharStack(cs, tmp);
+                }
+                PushCharStack(cs, curOp);
+                i++;
+            }
+        }
+    }
+
+    while (!IsCharStackEmpty(cs))
+    {
+        result[k++] = GetCharStackTop(cs);
+        PopCharStack(cs, tmp);
+    }
+    result[k] = '\0';
+}
+
+// ---------------- 计算后缀表达式 ----------------
+double calcRPN(char *str, numStack* ns)
+{
+    int i = 0;
+    while (str[i] != '\0')
+    {
+        if (str[i] >= '0' && str[i] <= '9')
+        {
+            // 把连续数字转成整数
+            int j = i;
+            int numLen = 0;
+            while (str[j] >= '0' && str[j] <= '9') { j++; numLen++; }
+            PushNumStack(ns, charToInt(str, i, numLen));
+            i = j;
+        }
+        else if (str[i] == ' ')
+        {
+            i++;
+        }
+        else
+        {
+            char op = str[i];
+            if (op == '~') // 单目减：只弹一个数
+            {
+                double a;
+                if (!PopNumStack(ns, a)) {
+                    cerr << "表达式错误：单目减缺少操作数\n";
+                    exit(1);
+                }
+                PushNumStack(ns, -a);
+                i++;
+            }
+            else // 二目运算：^ * / + -
+            {
+                double a, b;
+                if (!PopNumStack(ns, a) || !PopNumStack(ns, b)) {
+                    cerr << "表达式错误：二目运算缺少操作数\n";
+                    exit(1);
+                }
+                PushNumStack(ns, Operate(b, op, a)); // 注意顺序：b op a
+                i++;
+            }
+        }
+    }
+    return GetNumStackTop(ns);
+}
+
+// ---------------- 主程序：读入一行表达式，计算 ----------------
+int main()
+{
+    // 读入一行中缀表达式，例如：  -(-3)^2 + 4  或  2^3^2
+    // 建议：不以 '#' 结尾，直接回车结束一行即可
+    static char inbuf[MAX_SIZE];
+    if (!cin.getline(inbuf, MAX_SIZE)) return 0;
+
+    // 准备栈和后缀输出缓冲区
+    charStack cs;  InitCharStack(&cs);
+    numStack  ns;  InitNumStack(&ns);
+    // 后缀表达式缓存，数字之间以空格分隔
+    char *post = new char[MAX_SIZE];
+    memset(post, 0, MAX_SIZE);
+
+    // 中缀 -> 后缀
+    midToEnd(inbuf, post, &cs);
+
+    // 计算后缀
+    double ans = calcRPN(post, &ns);
+
+    // 输出：先打印后缀（便于你肉眼核对），再打印结果
+    cout << "RPN: " << post << "\n";
+    cout << "Ans: " << ans << "\n";
+
+    delete [] post;
     return 0;
 }
