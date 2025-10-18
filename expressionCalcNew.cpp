@@ -84,8 +84,18 @@ double Operate(double b,char op,double a)
         case '*':
             return b*a;
         case '/':
+            if(a==0.0)
+            {
+                cerr<<"除零错误\n";
+                exit(1);
+            }
             return b/a;
         case '^':
+            if(b==0.0&&a<0.0)
+            {
+                cerr<<"除零错误\n";
+                exit(1);
+            }
             return pow(b,a);
     }
     return 0.0;
@@ -326,7 +336,7 @@ double calcRPN(char *str,numStack*ns)
             {
                 double a;
                 if (!PopNumStack(ns, a)) {
-                    cerr << "表达式错误：单目减缺少操作数\n";//传出错误信息
+                    cerr << "表达式错误\n";//传出错误信息
                     exit(1);
                 }
                 PushNumStack(ns, -a);
@@ -336,7 +346,7 @@ double calcRPN(char *str,numStack*ns)
             {
                 double a, b;
                 if (!PopNumStack(ns, a) || !PopNumStack(ns, b)) {
-                    cerr << "表达式错误：二目运算缺少操作数\n";//传出错误信息
+                    cerr << "表达式错误\n";//传出错误信息
                     exit(1);
                 }
                 PushNumStack(ns, Operate(b, op, a)); 

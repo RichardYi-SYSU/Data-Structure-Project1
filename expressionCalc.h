@@ -1,6 +1,8 @@
 #define MAX_SIZE 1000
 #include <cmath>
 #include <iostream>
+#include <iomanip>
+#include <sstream>
 
 //栈的实现
 typedef struct {
