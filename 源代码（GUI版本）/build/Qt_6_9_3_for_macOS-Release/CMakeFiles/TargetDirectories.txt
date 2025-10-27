@@ -1,0 +1,5 @@
+/Users/richard/Desktop/QtFile/Calculator/build/Qt_6_9_3_for_macOS-Release/CMakeFiles/Calculator.dir
+/Users/richard/Desktop/QtFile/Calculator/build/Qt_6_9_3_for_macOS-Release/CMakeFiles/edit_cache.dir
+/Users/richard/Desktop/QtFile/Calculator/build/Qt_6_9_3_for_macOS-Release/CMakeFiles/rebuild_cache.dir
+/Users/richard/Desktop/QtFile/Calculator/build/Qt_6_9_3_for_macOS-Release/CMakeFiles/Calculator_autogen_timestamp_deps.dir
+/Users/richard/Desktop/QtFile/Calculator/build/Qt_6_9_3_for_macOS-Release/CMakeFiles/Calculator_autogen.dir
